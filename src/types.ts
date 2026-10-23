@@ -3,10 +3,15 @@
  */
 
 export interface Env {
-	/**
-	 * Binding for the Workers AI API.
-	 */
-	AI: Ai;
+    AI: Ai;
+
+    DB: D1Database;
+
+    ASSETS: {
+        fetch: (request: Request) => Promise<Response>;
+    };
+}
+
 
 	/**
 	 * Binding for static assets.
