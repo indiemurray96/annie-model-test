@@ -12,7 +12,6 @@ export interface Env {
     };
 }
 
-
 	/**
 	 * Binding for static assets.
 	 */
