@@ -15,8 +15,17 @@
 	"observability": {
 		"enabled": true
 	},
-	"ai": {
-		"binding": "AI"
-	},
-	"upload_source_maps": true
+	
+"ai": {
+  "binding": "AI"
+},
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "annie-independent-memory",
+    "database_id": "24ad1be9-0ec3-4ee3-8ed0-68dbecc697e7"
+  }
+],
+"upload_source_maps": true
+
 }
