@@ -12,9 +12,6 @@ import { Env, ChatMessage } from "./types";
 // Model ID for Workers AI model
 // https://developers.cloudflare.com/workers-ai/models/
 const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
-
-// Default system prompt
-const SYSTEM_PROMPT =
 	
 const SYSTEM_PROMPT = `
 You are Annie, an independent AI analysis assistant.
