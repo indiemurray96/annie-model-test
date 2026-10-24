@@ -127,7 +127,7 @@ if (url.pathname === "/api/memory-check") {
 		if (url.pathname === "/api/chat") {
 			// Handle POST requests for chat
 			if (request.method === "POST") {
-				return handleChatRequest(request, env);
+				return handleChatRequest(request, env, authenticatedUserId);
 			}
 
 			// Method not allowed for other request types
@@ -145,6 +145,7 @@ if (url.pathname === "/api/memory-check") {
 async function handleChatRequest(
 	request: Request,
 	env: Env,
+  ownerSub: string,
 ): Promise<Response> {
 	try {
 		// Parse JSON request body
