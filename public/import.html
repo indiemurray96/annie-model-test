@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Annie Private Memory Import</title>
+<style>body{font:16px system-ui;max-width:680px;margin:4rem auto;padding:0 1rem;color:#222}button,input{font:inherit;margin:.75rem 0}button{padding:.5rem 1rem}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f1f1;padding:1rem}p{line-height:1.5}</style></head>
+<body><h1>Annie — private archive</h1>
+<p>This imports the portable JSON backup of Annie's original private archive into the D1 database attached to this Worker. Only use an export you trust. The repository does not contain the archive.</p>
+<p>The import is scoped to your verified Cloudflare Access identity. A newer stored revision cannot be replaced by an older revision. Save a backup before importing another archive.</p>
+<p><label for="file">Annie portable archive (.json)</label><br><input type="file" id="file" accept=".json,application/json"></p>
+<button id="upload">Import private archive</button> <button id="status">Check status</button>
+<a href="/api/archive/backup">Download current private backup</a>
+<pre id="result" aria-live="polite">No import attempted.</pre>
+<script>
+const out=document.getElementById("result");
+document.getElementById("status").onclick=async()=>{try{const r=await fetch("/api/archive/status",{cache:"no-store"});out.textContent=JSON.stringify(await r.json(),null,2)}catch(e){out.textContent=String(e)}};
+document.getElementById("upload").onclick=async()=>{
+const f=document.getElementById("file").files[0];
+if(!f){out.textContent="Choose the exported JSON file first.";return}
+if(f.size>500000){out.textContent="Archive exceeds 500 KB limit.";return}
+try{
+const raw=await f.text(), parsed=JSON.parse(raw);
+if(parsed?.snapshot?.agentId!=="annie"){out.textContent="Not an Annie portable archive.";return}
+const r=await fetch("/api/archive/import",{method:"POST",headers:{"content-type":"application/json","x-annie-import":"1"},body:raw,cache:"no-store"});
+out.textContent=JSON.stringify(await r.json(),null,2);
+}catch(e){out.textContent=String(e)}
+};
+</script></body></html>
