@@ -11,6 +11,7 @@ import { Env, ChatMessage } from "./types";
 
 import { verifyUser } from "./access";
 import { importArchive, archiveStatus, archiveBackup, recallArchive } from "./memory";
+import { beginTurn, completeTurn, listConversations, getConversation, deleteConversation, recallFindings, ConversationNotFound } from "./continuity";
 
 
 // Model ID for Workers AI model
@@ -92,6 +93,14 @@ if (url.pathname === "/api/archive/import" && request.method === "POST") return 
 if (url.pathname === "/api/archive/status" && request.method === "GET") return archiveStatus(env, authenticatedUserId);
 if (url.pathname === "/api/archive/backup" && request.method === "GET") return archiveBackup(env, authenticatedUserId);
 
+if (url.pathname === "/api/conversations" && request.method === "GET") return listConversations(env.DB, authenticatedUserId);
+const conversationMatch = url.pathname.match(/^\/api\/conversations\/([0-9a-f-]{36})$/i);
+if (conversationMatch && request.method === "GET") return getConversation(env.DB, authenticatedUserId, conversationMatch[1]);
+if (conversationMatch && request.method === "DELETE") {
+  if (request.headers.get("origin") !== url.origin) return Response.json({error:"Forbidden"},{status:403});
+  return deleteConversation(env.DB, authenticatedUserId, conversationMatch[1]);
+}
+
 if (url.pathname === "/api/memory-check") {
   if (request.method !== "GET") {
     return new Response("Method not allowed", {
@@ -126,7 +135,7 @@ if (url.pathname === "/api/memory-check") {
 		if (url.pathname === "/api/chat") {
 			// Handle POST requests for chat
 			if (request.method === "POST") {
-				return handleChatRequest(request, env, authenticatedUserId);
+				return handleChatRequest(request, env, ctx, authenticatedUserId);
 			}
 
 			// Method not allowed for other request types
@@ -141,67 +150,73 @@ if (url.pathname === "/api/memory-check") {
 /**
  * Handles chat API requests
  */
-async function handleChatRequest(
-	request: Request,
-	env: Env,
-  ownerSub: string,
-): Promise<Response> {
-	try {
-		// Parse JSON request body
-		const { messages = [] } = (await request.json()) as {
-			messages: ChatMessage[];
-		};
+function parseModelDelta(data: string): string {
+  try {
+    const parsed = JSON.parse(data) as {response?:string; choices?:Array<{delta?:{content?:string}}>};
+    return typeof parsed.response === "string" ? parsed.response : (parsed.choices?.[0]?.delta?.content ?? "");
+  } catch { return ""; }
+}
 
-		
-const safeMessages: ChatMessage[] = Array.isArray(messages)
-  ? messages
-      .filter(
-        (msg) =>
-          msg != null &&
-          (msg.role === "user" || msg.role === "assistant") &&
-          typeof msg.content === "string"
-      )
-      .slice(-20)
-  : [];
+async function captureAnswer(stream: ReadableStream<Uint8Array>, db: D1Database, owner: string,
+  id: string, question: string): Promise<void> {
+  const decoder = new TextDecoder();
+  const reader = stream.getReader();
+  let buffer = "", answer = "", completed = false;
+  try {
+    for (;;) {
+      const {done,value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream:true}).replace(/\r/g,"");
+      let next: number;
+      while ((next = buffer.indexOf("\n\n")) >= 0) {
+        const event = buffer.slice(0,next); buffer = buffer.slice(next+2);
+        const data = event.split("\n").filter(l=>l.startsWith("data:")).map(l=>l.slice(5).trimStart()).join("\n");
+        if (data === "[DONE]") { completed = true; continue; }
+        answer += parseModelDelta(data);
+      }
+    }
+    if (buffer.trim()) {
+      const data = buffer.split("\n").filter(l=>l.startsWith("data:")).map(l=>l.slice(5).trimStart()).join("\n");
+      if (data === "[DONE]") completed = true;
+      else answer += parseModelDelta(data);
+    }
+    // A fully terminated stream without a DONE marker can still carry an entire answer.
+    if (answer.trim() && (completed || !buffer.trim())) await completeTurn(db,owner,id,question,answer);
+  } catch (err) {
+    console.error("Unable to persist assistant response",err);
+  } finally { reader.releaseLock(); }
+}
 
-const question = [...safeMessages].reverse().find(m => m.role === "user")?.content || "";
-const recalled = await recallArchive(env, ownerSub, question);
-const modelMessages: ChatMessage[] = [
-  { role: "system", content: SYSTEM_PROMPT + "\n\n" + recalled },
-  ...safeMessages,
-];
-
-
-		const inputs = {
-			messages: modelMessages,
-			max_tokens: 1024,
-			stream: true,
-		} satisfies AiTextGenerationInput & { stream: true };
-
-		const stream = await env.AI.run<typeof MODEL_ID>(MODEL_ID, inputs, {
-			// Uncomment to use AI Gateway
-			// gateway: {
-			//   id: "YOUR_GATEWAY_ID", // Replace with your AI Gateway ID
-			//   skipCache: false,      // Set to true to bypass cache
-			//   cacheTtl: 3600,        // Cache time-to-live in seconds
-			// },
-		});
-
-		return new Response(stream, {
-			headers: {
-				"content-type": "text/event-stream; charset=utf-8",
-				"cache-control": "no-cache",
-				connection: "keep-alive",
-			},
-		});
-	} catch (error) {
-		console.error("Error processing chat request:", error);
-		return new Response(
-			JSON.stringify({ error: "Failed to process request" }),
-			{
-				status: 500,
-				headers: { "content-type": "application/json" },
-			},
-		);
-	}
+async function handleChatRequest(request: Request, env: Env, ctx: ExecutionContext, ownerSub: string): Promise<Response> {
+  try {
+    const origin = request.headers.get("origin");
+    if (origin && origin !== new URL(request.url).origin) return Response.json({error:"Forbidden"},{status:403});
+    const input = await request.json() as {message?: unknown; conversationId?: unknown};
+    if (typeof input.message !== "string" || !input.message.trim() || input.message.length > 12000)
+      return Response.json({error:"Message must contain 1–12000 characters"},{status:400});
+    let turn: Awaited<ReturnType<typeof beginTurn>>;
+    try { turn = await beginTurn(env.DB,ownerSub,input.conversationId,input.message.trim()); }
+    catch (err) {
+      if (err instanceof ConversationNotFound) return Response.json({error:"Conversation not found"},{status:404});
+      throw err;
+    }
+    const recalled = await recallArchive(env,ownerSub,input.message);
+    const previous = await recallFindings(env.DB,ownerSub,input.message,turn.chatId);
+    const modelMessages: ChatMessage[] = [
+      {role:"system",content:SYSTEM_PROMPT+"\n\n"+recalled+"\n\n"+previous},
+      ...turn.messages
+    ];
+    const inputs = {messages:modelMessages,max_tokens:1024,stream:true} satisfies AiTextGenerationInput & {stream:true};
+    const stream = await env.AI.run<typeof MODEL_ID>(MODEL_ID,inputs);
+    const [clientStream,savedStream] = stream.tee();
+    ctx.waitUntil(captureAnswer(savedStream,env.DB,ownerSub,turn.chatId,input.message.trim()));
+    return new Response(clientStream,{headers:{
+      "content-type":"text/event-stream; charset=utf-8",
+      "cache-control":"no-store",
+      "x-annie-conversation-id":turn.chatId
+    }});
+  } catch(error) {
+    console.error("Annie chat failure",error);
+    return Response.json({error:"Unable to process chat"},{status:500,headers:{"cache-control":"no-store"}});
+  }
 }
