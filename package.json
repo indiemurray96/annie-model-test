@@ -34,9 +34,10 @@
 		"dev": "wrangler dev",
 		"e2e:dev": "wrangler dev --config wrangler.e2e.jsonc",
 		"start": "wrangler dev",
-		"test": "vitest"
+		"test": "vitest run --exclude \"**/*.test.cjs\" && node --test test/markdown-renderer.test.cjs"
 	},
 	"dependencies": {
-		"jose": "^6.2.13"
+		"jose": "^6.2.13",
+		"markdown-it": "15.0.3"
 	}
 }
