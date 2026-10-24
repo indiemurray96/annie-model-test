@@ -17,14 +17,11 @@
 		"publish": true
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "0.21.3",
 		"@cloudflare/workers-types": "^5.20261023.1",
 		"@types/node": "24.10.1",
-		"@vitest/runner": "4.1.10",
-		"@vitest/snapshot": "4.1.10",
 		"typescript": "5.9.3",
-		"vitest": "4.1.10",
-		"wrangler": "4.136.1"
+		"vitest": "4.1.12",
+		"wrangler": "4.152.0"
 	},
 	"private": true,
 	"scripts": {
@@ -39,5 +36,8 @@
 	"dependencies": {
 		"jose": "^6.2.13",
 		"markdown-it": "15.0.3"
+	},
+	"overrides": {
+		"undici": "7.30.1"
 	}
 }

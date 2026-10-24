@@ -13,6 +13,7 @@ import { verifyUser } from "./access";
 import { importArchive, archiveStatus, archiveBackup, recallArchiveContext } from "./memory";
 import { beginTurn, completeTurn, listConversations, getConversation, deleteConversation, recallFindingsContext, ConversationNotFound } from "./continuity";
 import { MODEL_ID, RESPONSE_VERSION, buildModelMessages } from "./prompt";
+import { memoryCheck } from "./health";
 
 
 export default {
@@ -66,28 +67,7 @@ if (url.pathname === "/api/memory-check") {
     });
   }
 
-  try {
-    const result = await env.DB
-      .prepare("SELECT COUNT(*) AS total FROM conversations")
-      .first<{ total: number }>();
-
-    return Response.json(
-      {
-        connected: true,
-        conversations: result?.total ?? 0
-      },
-      {
-        headers: { "cache-control": "no-store" }
-      }
-    );
-  } catch (error) {
-    console.error("D1 connection failed:", error);
-
-    return Response.json(
-      { connected: false },
-      { status: 500 }
-    );
-  }
+  return memoryCheck(env.DB, authenticatedUserId);
 }
 
 		if (url.pathname === "/api/chat") {
