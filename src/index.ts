@@ -165,8 +165,10 @@ const safeMessages: ChatMessage[] = Array.isArray(messages)
       .slice(-20)
   : [];
 
+const question = [...safeMessages].reverse().find(m => m.role === "user")?.content || "";
+const recalled = await recallArchive(env, ownerSub, question);
 const modelMessages: ChatMessage[] = [
-  { role: "system", content: SYSTEM_PROMPT },
+  { role: "system", content: SYSTEM_PROMPT + "\n\n" + recalled },
   ...safeMessages,
 ];
 
