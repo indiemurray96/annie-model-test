@@ -88,6 +88,11 @@ if (!authenticatedUserId) {
 }
 
 		
+
+if (url.pathname === "/api/archive/import" && request.method === "POST") return importArchive(request, env, authenticatedUserId);
+if (url.pathname === "/api/archive/status" && request.method === "GET") return archiveStatus(env, authenticatedUserId);
+if (url.pathname === "/api/archive/backup" && request.method === "GET") return archiveBackup(env, authenticatedUserId);
+
 if (url.pathname === "/api/memory-check") {
   if (request.method !== "GET") {
     return new Response("Method not allowed", {
