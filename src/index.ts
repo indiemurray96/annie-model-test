@@ -10,6 +10,7 @@
 import { Env, ChatMessage } from "./types";
 
 import { verifyUser } from "./access";
+import { importArchive, archiveStatus, archiveBackup, recallArchive } from "./memory";
 
 
 // Model ID for Workers AI model
