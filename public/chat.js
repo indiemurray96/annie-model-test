@@ -1,230 +1,159 @@
-/**
- * LLM Chat App Frontend
- *
- * Handles the chat UI interactions and communication with the backend API.
- */
-
-// DOM elements
+// Annie's private conversations are stored server-side against the Cloudflare Access identity.
 const chatMessages = document.getElementById("chat-messages");
 const userInput = document.getElementById("user-input");
 const sendButton = document.getElementById("send-button");
 const typingIndicator = document.getElementById("typing-indicator");
+const conversationSelect = document.getElementById("conversation-select");
+const newButton = document.getElementById("new-chat");
+const deleteButton = document.getElementById("delete-chat");
+let conversationId = null;
+let busy = false;
 
-// Chat state
-let chatHistory = [
-	{
-		role: "assistant",
-		content:
-			"Hello! I'm an LLM chat app powered by Cloudflare Workers AI. How can I help you today?",
-	},
-];
-let isProcessing = false;
+function put(role, content) {
+  const outer = document.createElement("div");
+  outer.className = "message " + (role === "user" ? "user-message" : "assistant-message");
+  const p = document.createElement("p");
+  p.textContent = content;
+  outer.appendChild(p);
+  chatMessages.appendChild(outer);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return p;
+}
 
-// Auto-resize textarea as user types
-userInput.addEventListener("input", function () {
-	this.style.height = "auto";
-	this.style.height = this.scrollHeight + "px";
-});
+function setBusy(value) {
+  busy = value; userInput.disabled = value; sendButton.disabled = value;
+  conversationSelect.disabled = value;
+  newButton.disabled = value; deleteButton.disabled = value;
+  typingIndicator.classList.toggle("visible",value);
+}
 
-// Send message on Enter (without Shift)
-userInput.addEventListener("keydown", function (e) {
-	if (e.key === "Enter" && !e.shiftKey) {
-		e.preventDefault();
-		sendMessage();
-	}
-});
+function clearChat() {
+  chatMessages.replaceChildren();
+  conversationId = null; conversationSelect.value = "";
+  deleteButton.disabled = true;
+  put("assistant","Hello, I'm Annie. Your conversations are saved privately and can be resumed here.");
+}
 
-// Send button click handler
-sendButton.addEventListener("click", sendMessage);
+async function refreshList() {
+  const res = await fetch("/api/conversations",{cache:"no-store"});
+  if (!res.ok) throw Error("Unable to load saved conversations");
+  const data = await res.json();
+  conversationSelect.replaceChildren();
+  const first = document.createElement("option");
+  first.value = ""; first.textContent = "New conversation";
+  conversationSelect.appendChild(first);
+  for (const chat of data.conversations || []) {
+    const opt = document.createElement("option");
+    opt.value = chat.id; opt.textContent = chat.title;
+    conversationSelect.appendChild(opt);
+  }
+  conversationSelect.value = conversationId || "";
+}
 
-/**
- * Sends a message to the chat API and processes the response
- */
+async function openConversation(id) {
+  if (busy) return;
+  if (!id) { clearChat(); return; }
+  const res = await fetch("/api/conversations/"+encodeURIComponent(id),{cache:"no-store"});
+  if (!res.ok) throw Error("Unable to open conversation");
+  const data = await res.json();
+  conversationId = id; chatMessages.replaceChildren();
+  for (const item of data.messages || []) put(item.role,item.content);
+  deleteButton.disabled = false; conversationSelect.value = id;
+}
+
+function sseEvents(buffer) {
+  const events = [];
+  let cut;
+  while ((cut=buffer.indexOf("\n\n"))>=0) {
+    const block=buffer.slice(0,cut); buffer=buffer.slice(cut+2);
+    const data=block.split("\n").filter(x=>x.startsWith("data:")).map(x=>x.slice(5).trimStart()).join("\n");
+    if(data) events.push(data);
+  }
+  return {events,buffer};
+}
+function getDelta(raw) {
+  try {
+    const data=JSON.parse(raw);
+    return typeof data.response==="string" ? data.response : (data.choices?.[0]?.delta?.content || "");
+  } catch { return ""; }
+}
+
 async function sendMessage() {
-	const message = userInput.value.trim();
-
-	// Don't send empty messages
-	if (message === "" || isProcessing) return;
-
-	// Disable input while processing
-	isProcessing = true;
-	userInput.disabled = true;
-	sendButton.disabled = true;
-
-	// Add user message to chat
-	addMessageToChat("user", message);
-
-	// Clear input
-	userInput.value = "";
-	userInput.style.height = "auto";
-
-	// Show typing indicator
-	typingIndicator.classList.add("visible");
-
-	// Add message to history
-	chatHistory.push({ role: "user", content: message });
-
-	try {
-		// Create new assistant response element
-		const assistantMessageEl = document.createElement("div");
-		assistantMessageEl.className = "message assistant-message";
-		assistantMessageEl.innerHTML = "<p></p>";
-		chatMessages.appendChild(assistantMessageEl);
-		const assistantTextEl = assistantMessageEl.querySelector("p");
-
-		// Scroll to bottom
-		chatMessages.scrollTop = chatMessages.scrollHeight;
-
-		// Send request to API
-		const response = await fetch("/api/chat", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				messages: chatHistory,
-			}),
-		});
-
-		// Handle errors
-		if (!response.ok) {
-			throw new Error("Failed to get response");
-		}
-		if (!response.body) {
-			throw new Error("Response body is null");
-		}
-
-		// Process streaming response
-		const reader = response.body.getReader();
-		const decoder = new TextDecoder();
-		let responseText = "";
-		let buffer = "";
-		const flushAssistantText = () => {
-			assistantTextEl.textContent = responseText;
-			chatMessages.scrollTop = chatMessages.scrollHeight;
-		};
-
-		let sawDone = false;
-		while (true) {
-			const { done, value } = await reader.read();
-
-			if (done) {
-				// Process any remaining complete events in buffer
-				const parsed = consumeSseEvents(buffer + "\n\n");
-				for (const data of parsed.events) {
-					if (data === "[DONE]") {
-						break;
-					}
-					try {
-						const jsonData = JSON.parse(data);
-						// Handle both Workers AI format (response) and OpenAI format (choices[0].delta.content)
-						let content = "";
-						if (
-							typeof jsonData.response === "string" &&
-							jsonData.response.length > 0
-						) {
-							content = jsonData.response;
-						} else if (jsonData.choices?.[0]?.delta?.content) {
-							content = jsonData.choices[0].delta.content;
-						}
-						if (content) {
-							responseText += content;
-							flushAssistantText();
-						}
-					} catch (e) {
-						console.error("Error parsing SSE data as JSON:", e, data);
-					}
-				}
-				break;
-			}
-
-			// Decode chunk
-			buffer += decoder.decode(value, { stream: true });
-			const parsed = consumeSseEvents(buffer);
-			buffer = parsed.buffer;
-			for (const data of parsed.events) {
-				if (data === "[DONE]") {
-					sawDone = true;
-					buffer = "";
-					break;
-				}
-				try {
-					const jsonData = JSON.parse(data);
-					// Handle both Workers AI format (response) and OpenAI format (choices[0].delta.content)
-					let content = "";
-					if (
-						typeof jsonData.response === "string" &&
-						jsonData.response.length > 0
-					) {
-						content = jsonData.response;
-					} else if (jsonData.choices?.[0]?.delta?.content) {
-						content = jsonData.choices[0].delta.content;
-					}
-					if (content) {
-						responseText += content;
-						flushAssistantText();
-					}
-				} catch (e) {
-					console.error("Error parsing SSE data as JSON:", e, data);
-				}
-			}
-			if (sawDone) {
-				break;
-			}
-		}
-
-		// Add completed response to chat history
-		if (responseText.length > 0) {
-			chatHistory.push({ role: "assistant", content: responseText });
-		}
-	} catch (error) {
-		console.error("Error:", error);
-		addMessageToChat(
-			"assistant",
-			"Sorry, there was an error processing your request.",
-		);
-	} finally {
-		// Hide typing indicator
-		typingIndicator.classList.remove("visible");
-
-		// Re-enable input
-		isProcessing = false;
-		userInput.disabled = false;
-		sendButton.disabled = false;
-		userInput.focus();
-	}
+  const message=userInput.value.trim();
+  if (!message || busy) return;
+  if (message.length>12000) { alert("Please keep each message under 12,000 characters."); return; }
+  setBusy(true); userInput.value=""; userInput.style.height="auto";
+  put("user",message);
+  let reply=null, answer="";
+  try {
+    const res=await fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({message,conversationId})});
+    if(!res.ok) throw Error("Annie returned HTTP "+res.status);
+    const id=res.headers.get("x-annie-conversation-id");
+    if(id) conversationId=id;
+    if(!res.body) throw Error("No model response stream");
+    reply=put("assistant","");
+    const reader=res.body.getReader(), decoder=new TextDecoder();
+    let buffer="";
+    while(true) {
+      const {done,value}=await reader.read();
+      if(done) break;
+      buffer+=decoder.decode(value,{stream:true}).replace(/\r/g,"");
+      const parsed=sseEvents(buffer); buffer=parsed.buffer;
+      for (const data of parsed.events) {
+        if(data==="[DONE]") continue;
+        answer+=getDelta(data); reply.textContent=answer;
+      }
+      chatMessages.scrollTop=chatMessages.scrollHeight;
+    }
+    if(buffer.trim()) {
+      for (const data of sseEvents(buffer+"\n\n").events) {
+        if(data!=="[DONE]") answer+=getDelta(data);
+      }
+      reply.textContent=answer;
+    }
+    if(!answer.trim()) reply.textContent="The model returned an empty response.";
+    await refreshList();
+    deleteButton.disabled=!conversationId;
+  } catch(e) {
+    console.error(e);
+    if(reply) reply.textContent="Unable to finish this response. Your previous messages are retained.";
+    else put("assistant","Unable to contact Annie. Your previous conversations remain saved.");
+  } finally {
+    setBusy(false); deleteButton.disabled=!conversationId; userInput.focus();
+  }
 }
 
-/**
- * Helper function to add message to chat
- */
-function addMessageToChat(role, content) {
-	const messageEl = document.createElement("div");
-	messageEl.className = `message ${role}-message`;
-	messageEl.innerHTML = `<p>${content}</p>`;
-	chatMessages.appendChild(messageEl);
-
-	// Scroll to bottom
-	chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function consumeSseEvents(buffer) {
-	let normalized = buffer.replace(/\r/g, "");
-	const events = [];
-	let eventEndIndex;
-	while ((eventEndIndex = normalized.indexOf("\n\n")) !== -1) {
-		const rawEvent = normalized.slice(0, eventEndIndex);
-		normalized = normalized.slice(eventEndIndex + 2);
-
-		const lines = rawEvent.split("\n");
-		const dataLines = [];
-		for (const line of lines) {
-			if (line.startsWith("data:")) {
-				dataLines.push(line.slice("data:".length).trimStart());
-			}
-		}
-		if (dataLines.length === 0) continue;
-		events.push(dataLines.join("\n"));
-	}
-	return { events, buffer: normalized };
-}
+conversationSelect.addEventListener("change",async()=> {
+  try { await openConversation(conversationSelect.value); }
+  catch(e) {console.error(e); alert("Unable to load this conversation.");}
+});
+newButton.addEventListener("click",()=>clearChat());
+deleteButton.addEventListener("click",async()=> {
+  if(!conversationId || busy || !confirm("Permanently delete this saved conversation and its derived notes?")) return;
+  setBusy(true);
+  try {
+    const res=await fetch("/api/conversations/"+encodeURIComponent(conversationId),
+      {method:"DELETE",headers:{"content-type":"application/json"}});
+    if(!res.ok) throw Error("Deletion failed");
+    clearChat(); await refreshList();
+  } catch(e) {console.error(e);alert("Unable to delete conversation.");}
+  finally {setBusy(false);}
+});
+sendButton.addEventListener("click",sendMessage);
+userInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+userInput.addEventListener("input",function(){this.style.height="auto";this.style.height=this.scrollHeight+"px";});
+(async()=>{
+  try {
+    await refreshList();
+    const option=conversationSelect.options[1];
+    if(option) await openConversation(option.value);
+    else clearChat();
+  } catch(e) {
+    console.error(e);
+    clearChat();
+    put("assistant","Could not load saved conversations. Check your Cloudflare Access login.");
+  }
+})();

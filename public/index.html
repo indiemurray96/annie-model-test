@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>LLM Chat App</title>
+		<title>Annie — Independent Analyst</title>
 		<style>
 			:root {
 				--primary-color: #f6821f;
@@ -144,18 +144,15 @@
 	</head>
 	<body>
 		<header>
-			<h1>Cloudflare AI Chat</h1>
-			<p>Powered by Cloudflare Workers AI</p>
+			<h1>Annie — Independent Analyst</h1>
+			<p>Independent model · private saved conversations</p>
 		</header>
+
+		<div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem"><label for="conversation-select">Conversation</label><select id="conversation-select" style="flex:1;min-width:130px;padding:.45rem"><option value="">New conversation</option></select><button id="new-chat" type="button">New</button><button id="delete-chat" type="button" disabled>Delete</button></div>
 
 		<div class="chat-container">
 			<div id="chat-messages" class="chat-messages">
-				<div class="message assistant-message">
-					<p>
-						Hello! I'm an LLM chat app powered by Cloudflare Workers AI. How can
-						I help you today?
-					</p>
-				</div>
+				
 			</div>
 
 			<div class="typing-indicator" id="typing-indicator">
@@ -174,7 +171,7 @@
 		</div>
 
 		<footer>
-			<p>Cloudflare Workers AI Chat Template &copy; 2025</p>
+			<p>Private D1 continuity. Chat excerpts are automatically saved as unreviewed notes, not verified conclusions.</p>
 		</footer>
 
 		<!-- Chat app script -->
