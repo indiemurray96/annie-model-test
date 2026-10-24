@@ -32,6 +32,20 @@
   "POLICY_AUD": "e60012f200fda062ab349aff9befe199b454a010b92f103298065abc05e34521"
 },
 
-"upload_source_maps": true
+"upload_source_maps": true,
+
+// Preview bindings are not inherited. Never point this DB at production.
+"previews": {
+  "ai": { "binding": "AI" },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "annie-independent-preview",
+    "database_id": "cb532c25-5524-4c69-9823-92caf6577ebf"
+  }],
+  "vars": {
+    "TEAM_DOMAIN": "https://wandering-unit-f267.cloudflareaccess.com",
+    "POLICY_AUD": "e60012f200fda062ab349aff9befe199b454a010b92f103298065abc05e34521"
+  }
+}
 
 }
