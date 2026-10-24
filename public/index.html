@@ -67,12 +67,44 @@
 				padding: 0.75rem;
 				border-radius: 8px;
 				max-width: 80%;
+				min-width: 0;
+				overflow-wrap: anywhere;
 			}
 
-			.message p {
-				white-space: pre-line;
-				margin: 0;
-				overflow-wrap: anywhere;
+			.user-message .message-content { white-space: pre-wrap; }
+			.assistant-message .message-content { line-height: 1.65; }
+			.assistant-message .message-content > :first-child { margin-top: 0; }
+			.assistant-message .message-content > :last-child { margin-bottom: 0; }
+			.assistant-message p, .assistant-message ul, .assistant-message ol,
+			.assistant-message blockquote, .assistant-message pre, .assistant-message .table-scroll {
+				margin: 0 0 .8rem;
+			}
+			.assistant-message ul, .assistant-message ol { padding-left: 1.4rem; }
+			.assistant-message li + li { margin-top: .25rem; }
+			.assistant-message li > p { margin-bottom: .35rem; }
+			.assistant-message h1, .assistant-message h2, .assistant-message h3,
+			.assistant-message h4, .assistant-message h5, .assistant-message h6 {
+				font-size: 1.05em; line-height: 1.4; color: inherit; margin: 1rem 0 .5rem;
+			}
+			.assistant-message a { color: #a64608; text-decoration-thickness: .08em; }
+			.assistant-message blockquote { padding-left: .8rem; border-left: 3px solid #d1d5db; color: #4b5563; }
+			.assistant-message code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .88em; }
+			.assistant-message :not(pre) > code { background: #e5e7eb; padding: .1rem .25rem; border-radius: 3px; }
+			.assistant-message pre {
+				max-width: 100%; overflow-x: auto; padding: .75rem; border-radius: 5px;
+				background: #e5e7eb; white-space: pre; overflow-wrap: normal;
+			}
+			.table-scroll { max-width: 100%; overflow-x: auto; }
+			.assistant-message table { border-collapse: collapse; min-width: 100%; font-size: .95em; }
+			.assistant-message th, .assistant-message td { padding: .45rem .6rem; border: 1px solid #d1d5db; text-align: left; vertical-align: top; }
+			.assistant-message th { background: #e5e7eb; font-weight: 600; }
+			.assistant-message hr { border: 0; border-top: 1px solid #d1d5db; margin: 1rem 0; }
+			@media (max-width: 480px) {
+				body { padding: .65rem; }
+				header { margin-bottom: 1rem; padding: .75rem 0; }
+				.chat-messages { padding: .65rem; }
+				.message { max-width: 96%; padding: .7rem; }
+				.chat-container { height: calc(100dvh - 180px); min-height: 360px; }
 			}
 
 			.user-message {
@@ -95,6 +127,7 @@
 
 			#user-input {
 				flex: 1;
+				min-width: 0;
 				padding: 0.75rem;
 				border: 1px solid var(--border-color);
 				border-radius: 4px;
@@ -175,6 +208,8 @@
 		</footer>
 
 		<!-- Chat app script -->
+		<script src="vendor/markdown-it.min.js"></script>
+		<script src="markdown-renderer.js"></script>
 		<script src="chat.js"></script>
 	</body>
 </html>

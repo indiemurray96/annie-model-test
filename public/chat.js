@@ -9,11 +9,18 @@ const deleteButton = document.getElementById("delete-chat");
 let conversationId = null;
 let busy = false;
 
+function renderReply(element, content) {
+  if (window.AnnieMarkdown) window.AnnieMarkdown.renderMessage(element, "assistant", content);
+  else element.textContent = content;
+}
+
 function put(role, content) {
   const outer = document.createElement("div");
   outer.className = "message " + (role === "user" ? "user-message" : "assistant-message");
-  const p = document.createElement("p");
-  p.textContent = content;
+  const p = document.createElement("div");
+  p.className = "message-content";
+  if (role === "assistant") renderReply(p, content);
+  else p.textContent = content;
   outer.appendChild(p);
   chatMessages.appendChild(outer);
   chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -102,7 +109,7 @@ async function sendMessage() {
       const parsed=sseEvents(buffer); buffer=parsed.buffer;
       for (const data of parsed.events) {
         if(data==="[DONE]") continue;
-        answer+=getDelta(data); reply.textContent=answer;
+        answer+=getDelta(data); renderReply(reply, answer);
       }
       chatMessages.scrollTop=chatMessages.scrollHeight;
     }
@@ -110,7 +117,7 @@ async function sendMessage() {
       for (const data of sseEvents(buffer+"\n\n").events) {
         if(data!=="[DONE]") answer+=getDelta(data);
       }
-      reply.textContent=answer;
+      renderReply(reply, answer);
     }
     if(!answer.trim()) reply.textContent="The model returned an empty response.";
     await refreshList();
