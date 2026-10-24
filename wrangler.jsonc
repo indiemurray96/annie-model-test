@@ -26,6 +26,12 @@
     "database_id": "24ad1be9-0ec3-4ee3-8ed0-68dbecc697e7"
   }
 ],
+
+"vars": {
+  "TEAM_DOMAIN": "https://wandering-unit-f267.cloudflareaccess.com",
+  "POLICY_AUD": "e60012f200fda062ab349aff9befe199b454a010b92f103298065abc05e34521"
+},
+
 "upload_source_maps": true
 
 }

@@ -9,6 +9,9 @@
  */
 import { Env, ChatMessage } from "./types";
 
+import { verifyUser } from "./access";
+
+
 // Model ID for Workers AI model
 // https://developers.cloudflare.com/workers-ai/models/
 const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
@@ -70,6 +73,19 @@ export default {
 		}
 
 		// API Routes
+
+const authenticatedUserId = await verifyUser(request, env);
+
+if (!authenticatedUserId) {
+  return Response.json(
+    { error: "Unauthorized" },
+    {
+      status: 401,
+      headers: { "cache-control": "no-store" }
+    }
+  );
+}
+
 		
 if (url.pathname === "/api/memory-check") {
   if (request.method !== "GET") {

@@ -1,27 +1,25 @@
+
 /**
- * Type definitions for the LLM chat application.
+ * Type definitions for Annie's application.
  */
 
 export interface Env {
-    AI: Ai;
+  AI: Ai;
 
-    DB: D1Database;
+  DB: D1Database;
 
-    ASSETS: {
-        fetch: (request: Request) => Promise<Response>;
-    };
-}
+  TEAM_DOMAIN: string;
+  POLICY_AUD: string;
 
-	/**
-	 * Binding for static assets.
-	 */
-	ASSETS: { fetch: (request: Request) => Promise<Response> };
+  ASSETS: {
+    fetch: (request: Request) => Promise<Response>;
+  };
 }
 
 /**
  * Represents a chat message.
  */
 export interface ChatMessage {
-	role: "system" | "user" | "assistant";
-	content: string;
+  role: "system" | "user" | "assistant";
+  content: string;
 }
