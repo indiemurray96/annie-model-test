@@ -173,38 +173,92 @@
 				font-size: 0.85rem;
 				color: var(--text-light);
 			}
-		</style>
+		
+:root { color-scheme: dark; --primary-color:#c5b3ff; --primary-hover:#dbceff; --light-bg:#17151e; --border-color:#36313f; --text-color:#eeeaf5; --text-light:#b3aabd; --user-msg-bg:#30273f; --assistant-msg-bg:transparent; }
+body { background:#100f14; color:var(--text-color); max-width:1100px; height:100vh; height:100dvh; margin:auto; padding:24px 32px 16px; display:flex; flex-direction:column; overflow:hidden; }
+header { display:flex; align-items:center; gap:16px; text-align:left; margin:0 0 22px; padding:0; border:0; flex-shrink:0; }
+.monogram { width:48px; height:48px; display:grid; place-items:center; border:1px solid #64507f; border-radius:16px; color:#e4d6ff; background:#2c223a; font:28px Georgia,serif; }
+h1 { font-size:25px; line-height:1.25; letter-spacing:-.7px; color:#f4effc; font-weight:650; }
+.subtitle { color:var(--text-light); font-size:13px; margin-top:3px; }
+.private-badge { margin-left:auto; border:1px solid var(--border-color); border-radius:30px; padding:5px 11px; color:#c4b7d5; font-size:12px; }
+.conversation-bar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-shrink:0; }
+.conversation-bar label { color:var(--text-light); font-size:12px; }
+select, button, textarea { font:inherit; }
+select { flex:1; min-width:0; width:0; text-overflow:ellipsis; padding:10px 32px 10px 12px; border:1px solid var(--border-color); border-radius:10px; background:#201c28; color:var(--text-color); font-size:13px; min-height:44px; }
+button { min-height:44px; padding:9px 15px; border:1px solid #4b405b; border-radius:10px; background:#272130; color:#eee7f9; cursor:pointer; font-size:13px; font-weight:600; transition:background .15s; }
+button:hover { background:#383044; }
+#delete-chat { color:#c8afba; background:transparent; border-color:transparent; }
+#delete-chat:hover:enabled { color:#ffd4de; background:#39232c; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+:focus-visible { outline:2px solid #d7bdff; outline-offset:3px; }
+.chat-container { flex:1; min-height:0; height:auto; border-radius:20px; background:var(--light-bg); box-shadow:0 16px 60px #0003; }
+.chat-messages { min-height:0; padding:28px 32px; scrollbar-color:#564b64 transparent; }
+.message { max-width:100%; padding:0; margin:0 0 28px; font-size:15px; }
+.message::before { display:block; font-size:10px; font-weight:700; letter-spacing:1.5px; margin-bottom:9px; color:#ba9fe0; content:"ANNIE"; }
+.user-message { max-width:85%; border:1px solid #4b3a60; border-radius:16px 16px 4px 16px; padding:15px 18px; }
+.user-message::before { content:"YOU"; color:#c1b3d1; }
+.assistant-message { padding-right:12px; }
+.assistant-message .message-content { line-height:1.8; }
+.assistant-message a { color:#d7baff; text-underline-offset:3px; }
+.assistant-message blockquote { border-color:#9677bb; color:#c4b7d5; }
+.assistant-message :not(pre)>code, .assistant-message pre { background:#292432; color:#e7dcf5; }
+.assistant-message pre { padding:16px; border:1px solid var(--border-color); border-radius:10px; }
+.table-scroll { border:1px solid #45394f; border-radius:10px; scrollbar-color:#6a577d #201b29; }
+.assistant-message th,.assistant-message td { border-color:#45394f; padding:12px; overflow-wrap:anywhere; }
+.assistant-message th { background:#30263d; color:#e8dcf5; }
+.assistant-message td { background:#211c2a; }
+.assistant-message hr { border-color:var(--border-color); }
+.message-input { align-items:flex-end; gap:12px; margin:0 20px 16px; padding:12px; border:1px solid #51415f; border-radius:15px; background:#221c2b; }
+.message-input:focus-within { border-color:#ad8fd0; box-shadow:0 0 0 3px #b690e010; }
+#user-input { background:transparent; color:var(--text-color); border:0; padding:9px 6px; font-size:16px; line-height:1.5; min-height:44px; max-height:160px; overflow-y:auto; }
+#user-input::placeholder { color:#aea0bc; }
+#user-input:focus-visible { outline:none; }
+#send-button { background:#c5b3ff; color:#20152f; padding:0 18px; border-radius:10px; margin:0; min-height:44px; }
+#send-button:hover:enabled { background:#dbceff; }
+#send-button:disabled { background:#70647f; }
+.typing-indicator { padding:0 32px 16px; color:#ccb7e6; font-size:13px; font-style:normal; }
+footer { flex-shrink:0; margin-top:12px; font-size:11px; line-height:1.5; color:#a89bb6; }
+.composer-hint { color:#bbaeC6; font-size:11px; padding:0 32px 12px; }
+@media(max-width:600px) {
+ body { padding:16px 12px 10px; } header { margin-bottom:16px; gap:11px; } h1 { font-size:23px; } .monogram { width:42px; height:42px; border-radius:13px; } .private-badge { font-size:10px; padding:4px 8px; }
+ .conversation-bar { flex-wrap:wrap; gap:6px; margin-bottom:12px; } .conversation-bar label { width:100%; } select { font-size:12px; } button { padding:8px 10px; }
+ .chat-container { min-height:0; height:auto; border-radius:16px; } .chat-messages { padding:20px 16px; } .message { max-width:100%; padding:0; font-size:14px; } .user-message { max-width:94%; padding:12px 14px; } .assistant-message { padding-right:0; }
+ .message-input { margin:0 10px 10px; padding:7px; gap:6px; } #send-button { padding:0 13px; } .composer-hint { padding:0 20px 10px; } footer { font-size:10px; margin-top:8px; } .typing-indicator { padding:0 16px 12px; }
+}
+@media(max-height:500px) { body {overflow:auto; height:auto; min-height:100dvh;} .chat-container {flex:none; height:65dvh; min-height:260px;} }
+@media(prefers-reduced-motion:reduce) { * {transition:none!important;scroll-behavior:auto!important;} }
+
+</style>
 	</head>
 	<body>
-		<header>
-			<h1>Annie — Independent Analyst</h1>
-			<p>GPT-OSS 120B · private saved conversations</p>
-		</header>
+		<header><div class="monogram" aria-hidden="true">a</div><div><h1>Annie</h1><p class="subtitle">Your independent analyst</p></div><span class="private-badge">Private conversations</span></header>
 
-		<div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem"><label for="conversation-select">Conversation</label><select id="conversation-select" style="flex:1;min-width:130px;padding:.45rem"><option value="">New conversation</option></select><button id="new-chat" type="button">New</button><button id="delete-chat" type="button" disabled>Delete</button></div>
+		<nav class="conversation-bar" aria-label="Conversations"><label for="conversation-select">Your conversations</label><select id="conversation-select"><option value="">New conversation</option></select><button id="new-chat" type="button">+ New</button><button id="delete-chat" type="button" disabled>Delete</button></nav>
 
-		<div class="chat-container">
-			<div id="chat-messages" class="chat-messages">
+		<main class="chat-container" aria-label="Chat with Annie">
+			<div id="chat-messages" class="chat-messages" role="region" aria-label="Conversation messages" tabindex="0">
 				
 			</div>
 
-			<div class="typing-indicator" id="typing-indicator">
-				AI is thinking...
+			<div class="typing-indicator" id="typing-indicator" role="status">
+				Annie is thinking…
 			</div>
 
 			<div class="message-input">
 				<textarea
 					id="user-input"
-					placeholder="Type your message here..."
+					aria-label="Message Annie"
+                    placeholder="What’s on your mind?"
 					rows="1"
 					autofocus
 				></textarea>
 				<button id="send-button">Send</button>
 			</div>
-		</div>
+<p class="composer-hint">Enter to send · Shift + Enter for a new line</p>
+		</main>
 
 		<footer>
-			<p>Private D1 continuity. Chat excerpts are automatically saved as unreviewed notes, not verified conclusions.</p>
+			<p>Conversations saved privately · Saved notes are not verified conclusions.</p>
 		</footer>
 
 		<!-- Chat app script -->
