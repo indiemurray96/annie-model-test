@@ -1,0 +1,50 @@
+// Nora has dedicated Access and production/preview D1 bindings. Never substitute Annie's audience or databases.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nora-independent",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./public"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nora-independent-memory",
+      "database_id": "b5a81d55-47c1-41d2-bc84-d128f6b72c3e"
+    }
+  ],
+  "vars": {
+    "TEAM_DOMAIN": "https://wandering-unit-f267.cloudflareaccess.com",
+    "POLICY_AUD": "f44724dffc731d43d4a74f80e1a1975e85a815447b24705e2b7b3fd4cb4cd3ec"
+  },
+  "upload_source_maps": true,
+  "previews": {
+    "ai": {
+      "binding": "AI"
+    },
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "nora-independent-preview",
+        "database_id": "15f8de93-89da-4901-8db2-2a437b9feab8"
+      }
+    ],
+    "vars": {
+      "TEAM_DOMAIN": "https://wandering-unit-f267.cloudflareaccess.com",
+      "POLICY_AUD": "f44724dffc731d43d4a74f80e1a1975e85a815447b24705e2b7b3fd4cb4cd3ec"
+    }
+  },
+  "workers_dev": true
+}
