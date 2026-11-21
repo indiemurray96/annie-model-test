@@ -1,6 +1,6 @@
 {
 	"name": "annie-model-test",
-	"description": "A simple chat application powered by Cloudflare Workers AI",
+	"description": "Retired Cloudflare Worker",
 	"cloudflare": {
 		"label": "LLM Chat App",
 		"products": [
@@ -26,12 +26,13 @@
 	"private": true,
 	"scripts": {
 		"cf-typegen": "wrangler types",
-		"check": "tsc --noEmit && wrangler deploy --dry-run",
+		"check": "node --check retired.mjs && wrangler deploy --dry-run",
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
-		"e2e:dev": "wrangler dev --config wrangler.e2e.jsonc",
+		"e2e:dev": "wrangler dev",
 		"start": "wrangler dev",
-		"test": "vitest run --exclude \"**/*.test.cjs\" && node --test test/markdown-renderer.test.cjs"
+		"test": "node --test test/retired.test.mjs",
+		"test:legacy": "vitest run --exclude \"**/*.test.cjs\" && node --test test/markdown-renderer.test.cjs"
 	},
 	"dependencies": {
 		"jose": "^6.2.13",
